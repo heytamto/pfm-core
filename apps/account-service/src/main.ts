@@ -1,8 +1,41 @@
 import { NestFactory } from '@nestjs/core';
-import { AccountServiceModule } from './account-service.module';
+import { Transport, MicroserviceOptions } from '@nestjs/microservices';
+import { Logger, ValidationPipe } from '@nestjs/common';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AccountServiceModule);
-  await app.listen(process.env.port ?? 3000);
+  const logger = new Logger('AccountService_Main');
+  
+  // 1. Khởi tạo ứng dụng NestJS dạng HTTP truyền thống (Dành cho API Endpoint)
+  const app = await NestFactory.create(AppModule);
+
+  // Cấu hình ValidationPipe toàn cục để tự động bắt lỗi dữ liệu API đầu vào (Dùng class-validator)
+  app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+
+  // Cấu hình Prefix cho toàn bộ API (Ví dụ: http://localhost:3000/api/v1/...)
+  app.setGlobalPrefix('api/v1');
+
+  // 2. Biến ứng dụng thành Hybrid: Kết nối thêm cổng lắng nghe RabbitMQ (Hàng đợi 'account_queue')
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: ['amqp://guest:guest@localhost:5672'],
+      queue: 'account_queue',
+      queueOptions: {
+        durable: true, // Hàng đợi không bị mất khi restart broker
+      },
+    },
+  });
+
+  // 3. Kích hoạt lắng nghe song song cả Microservice và cổng HTTP
+  await app.startAllMicroservices();
+  
+  const port = 3000; // Cổng chạy API của Account Service
+  await app.listen(port);
+  
+  logger.log(`🚀 [Write Side] Account Microservice đang chạy tại cổng HTTP: ${port}`);
+  logger.log(`🐇 [Queue Side] Đang kết nối và lắng nghe RabbitMQ hàng đợi 'account_queue'...`);
 }
-bootstrap();
+
+// Chạy kích hoạt hệ thống
+void bootstrap();
