@@ -13,7 +13,7 @@ async function bootstrap() {
     transport: Transport.RMQ,
     options: {
       urls: [rmqUrl],
-      queue: 'account_queue',
+      queue: 'analytics_queue',
       queueOptions: { durable: true },
     },
   });

@@ -35,7 +35,7 @@ import { AccountEventHandler } from './events/account-event.handler';
         }),
 
         TypeOrmModule.forFeature([EventStoreEntity]),
-        CoreModule.registerRabbitMQ('account_queue'),
+        CoreModule.registerRabbitMQ('analytics_queue'),
     ],
     controllers: [AccountController, AppController],
     providers: [

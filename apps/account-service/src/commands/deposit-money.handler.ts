@@ -9,7 +9,7 @@ export class DepositMoneyCommand {
     public readonly accountId: string,
     public readonly amount: number,
     public readonly referenceId: string,
-  ) {}
+  ) { }
 }
 
 // 2. Handler xử lý lệnh nạp tiền
@@ -19,7 +19,7 @@ export class DepositMoneyHandler implements ICommandHandler<DepositMoneyCommand>
   constructor(
     private readonly eventStoreRepository: EventStoreRepository,
     private readonly publisher: EventPublisher,
-  ) {}
+  ) { }
 
   async execute(command: DepositMoneyCommand): Promise<void> {
     const { accountId, amount, referenceId } = command;
@@ -44,7 +44,7 @@ export class DepositMoneyHandler implements ICommandHandler<DepositMoneyCommand>
     const expectedVersion = eventEntities[eventEntities.length - 1].sequenceNumber;
 
     // Bước E: Gọi Domain Logic nạp tiền (Hàm này tự sinh ra MoneyDepositedEvent bên trong)
-    account.deposit(amount, referenceId);
+    account.deposit(accountId,amount, referenceId);
 
     // Bước F: Trích xuất event mới sinh ra để chuẩn bị ghi xuống đĩa
     const uncommittedEvents = account.getUncommittedEvents().map((event) => ({
