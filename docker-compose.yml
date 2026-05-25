@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # 1. Message Broker: Điều phối các Event và Saga điều hướng
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: pfm_rabbitmq
+    ports:
+      - "5672:5672"   # Cổng giao tiếp Microservice
+      - "15672:15672" # Giao diện Quản lý (User/Pass mặc định: guest/guest)
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+
+  # 2. Write Database: Nơi lưu các Event Store (Dùng Postgres cho bền bỉ, ACID)
+  eventstore-db:
+    image: postgres:15-alpine
+    container_name: pfm_eventstore
+    environment:
+      POSTGRES_USER: tam_admin
+      POSTGRES_PASSWORD: tam_secure_password
+      POSTGRES_DB: pfm_eventstore
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 3. Read Database: Nơi lưu các View/Projection cấu trúc phẳng để query siêu tốc
+  mongodb:
+    image: mongo:latest
+    container_name: pfm_mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  # 4. Cache & Saga State: Lưu trạng thái các giao dịch đang xử lý dở dang
+  redis:
+    image: redis:alpine
+    container_name: pfm_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  rabbitmq_data:
+  postgres_data:
+  mongo_data:
+  redis_data:

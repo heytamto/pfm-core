@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json.schemastore.org/nest-cli",
+  "collection": "@nestjs/schematics",
+  "sourceRoot": "apps/pfm-core/src",
+  "compilerOptions": {
+    "deleteOutDir": true,
+    "webpack": true,
+    "tsConfigPath": "apps/pfm-core/tsconfig.app.json"
+  },
+  "monorepo": true,
+  "root": "apps/pfm-core",
+  "projects": {
+    "account-service": {
+      "type": "application",
+      "root": "apps/account-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/account-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/account-service/tsconfig.app.json"
+      }
+    },
+    "analytics-service": {
+      "type": "application",
+      "root": "apps/analytics-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/analytics-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/analytics-service/tsconfig.app.json"
+      }
+    },
+    "budget-service": {
+      "type": "application",
+      "root": "apps/budget-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/budget-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/budget-service/tsconfig.app.json"
+      }
+    },
+    "pfm-core": {
+      "type": "application",
+      "root": "apps/pfm-core",
+      "entryFile": "main",
+      "sourceRoot": "apps/pfm-core/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/pfm-core/tsconfig.app.json"
+      }
+    },
+    "transaction-service": {
+      "type": "application",
+      "root": "apps/transaction-service",
+      "entryFile": "main",
+      "sourceRoot": "apps/transaction-service/src",
+      "compilerOptions": {
+        "tsConfigPath": "apps/transaction-service/tsconfig.app.json"
+      }
+    }
+  }
+}
