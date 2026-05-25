@@ -1,21 +1,25 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { CoreModule } from '@app/core'; // Kế thừa cấu hình RabbitMQ từ Shared Library
+import { ConfigModule } from '@nestjs/config'; // 1. Import ConfigModule
+import { CoreModule } from '@app/core';
 import { AccountView, AccountViewSchema } from './schemas/account-view.schema';
 import { AccountConsumerController } from './controllers/account-consumer.controller';
 
 @Module({
-  imports: [
-    // 1. Kết nối tới container MongoDB
-    MongooseModule.forRoot('mongodb://tam_admin:tam_secure_password@localhost:27017/pfm_analytics?authSource=admin'),
+    imports: [
+        // 2. Kích hoạt ConfigModule toàn cục
+        ConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: '.env',
+        }),
 
-    // 2. Đăng ký Schema cho Module này sử dụng
-    MongooseModule.forFeature([{ name: AccountView.name, schema: AccountViewSchema }]),
+        // 3. Sử dụng biến môi trường lấy URI kết nối Mongo
+        MongooseModule.forRoot(process.env.MONGODB_URI || 'mongodb://localhost:27017/pfm_analytics'),
 
-    // 3. Đăng ký lắng nghe hàng đợi RabbitMQ từ Shared module
-    CoreModule.registerRabbitMQ('analytics_queue'),
-  ],
-  controllers: [AccountConsumerController], // Đăng ký Consumer để kích hoạt lắng nghe event
-  providers: [],
+        MongooseModule.forFeature([{ name: AccountView.name, schema: AccountViewSchema }]),
+        CoreModule.registerRabbitMQ('account_queue'),
+    ],
+    controllers: [AccountConsumerController],
+    providers: [],
 })
-export class AppModule {}
+export class AppModule { }

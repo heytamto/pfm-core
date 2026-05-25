@@ -28,6 +28,9 @@ services:
   mongodb:
     image: mongo:latest
     container_name: pfm_mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: tam_admin
+      MONGO_INITDB_ROOT_PASSWORD: tam_secure_password
     ports:
       - "27017:27017"
     volumes:

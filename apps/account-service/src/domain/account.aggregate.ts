@@ -1,5 +1,6 @@
 import { AggregateRoot } from '@nestjs/cqrs';
 import { BadRequestException } from '@nestjs/common';
+// Giữ nguyên dòng import các Event chính chủ từ file dùng chung này
 import { AccountOpenedEvent, MoneyDepositedEvent, MoneyWithdrawnEvent } from '../events/account.events';
 
 export class AccountAggregate extends AggregateRoot {
@@ -14,7 +15,7 @@ export class AccountAggregate extends AggregateRoot {
   // Phương thức tĩnh để khởi tạo một Aggregate mới (Mở ví mới)
   static open(id: string, name: string, currency: string, initialBalance: number): AccountAggregate {
     const account = new AccountAggregate();
-    // Thay vì gán trực tiếp, ta dùng apply() để NestJS ghi nhận Event
+    // Khởi tạo Event mở tài khoản từ file import
     account.apply(new AccountOpenedEvent(id, name, currency, initialBalance));
     return account;
   }
@@ -25,7 +26,7 @@ export class AccountAggregate extends AggregateRoot {
     this.apply(new MoneyDepositedEvent(this.id, amount, referenceId));
   }
 
-  // Nghiệp vụ Rút tiền (Chỗ này thể hiện tư duy Senior: Chặn không cho rút quá số dư)
+  // Nghiệp vụ Rút tiền
   public withdraw(amount: number, referenceId: string): void {
     if (amount <= 0) throw new BadRequestException('Số tiền rút phải lớn hơn 0');
     if (this.balance < amount) {
@@ -35,27 +36,23 @@ export class AccountAggregate extends AggregateRoot {
   }
 
   // =========================================================================
-  // CÁC HÀM REHYDRATE (MUTATOR) - Chỉ dùng để cập nhật trạng thái, KHÔNG chứa logic validate
+  // CÁC HÀM REHYDRATE (MUTATOR) - Chỉ dùng để cập nhật trạng thái
   // =========================================================================
 
-  // Tự động kích hoạt khi Event AccountOpenedEvent được áp dụng
   onAccountOpenedEvent(event: AccountOpenedEvent) {
     this.id = event.accountId;
     this.balance = event.initialBalance;
     this.isLive = true;
   }
 
-  // Tự động kích hoạt khi có tiền nạp vào
   onMoneyDepositedEvent(event: MoneyDepositedEvent) {
     this.balance += event.amount;
   }
 
-  // Tự động kích hoạt khi có tiền rút ra
   onMoneyWithdrawnEvent(event: MoneyWithdrawnEvent) {
     this.balance -= event.amount;
   }
 
-  // Getter để lấy thông tin ra ngoài nhưng không cho sửa trực tiếp
   public getId(): string {
     return this.id;
   }
