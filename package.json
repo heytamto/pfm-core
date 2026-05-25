@@ -22,9 +22,17 @@
   "dependencies": {
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
+    "@nestjs/cqrs": "^11.0.3",
+    "@nestjs/microservices": "^11.1.24",
+    "@nestjs/mongoose": "^11.0.4",
     "@nestjs/platform-express": "^11.0.1",
+    "amqp-connection-manager": "^5.0.0",
+    "amqplib": "^2.0.1",
+    "mongoose": "^9.6.2",
+    "pg": "^8.21.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "typeorm": "^1.0.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
@@ -68,7 +76,11 @@
     "coverageDirectory": "./coverage",
     "testEnvironment": "node",
     "roots": [
-      "<rootDir>/apps/"
-    ]
+      "<rootDir>/apps/",
+      "<rootDir>/libs/"
+    ],
+    "moduleNameMapper": {
+      "^@app/core(|/.*)$": "<rootDir>/libs/core/src/$1"
+    }
   }
 }
