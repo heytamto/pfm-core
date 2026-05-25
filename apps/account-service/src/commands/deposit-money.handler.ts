@@ -3,7 +3,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { EventStoreRepository } from '../domain/event-store.repository';
 import { AccountAggregate } from '../domain/account.aggregate';
 
-// 1. Định nghĩa Command (Dữ liệu đầu vào)
+// 1. Định nghĩa Command nạp tiền
 export class DepositMoneyCommand {
   constructor(
     public readonly accountId: string,
@@ -12,47 +12,50 @@ export class DepositMoneyCommand {
   ) {}
 }
 
-// 2. Viết Handler xử lý Command
+// 2. Handler xử lý lệnh nạp tiền
 @CommandHandler(DepositMoneyCommand)
 @Injectable()
 export class DepositMoneyHandler implements ICommandHandler<DepositMoneyCommand> {
   constructor(
     private readonly eventStoreRepository: EventStoreRepository,
-    private readonly publisher: EventPublisher, // Công cụ của NestJS để bind EventBus vào Aggregate
+    private readonly publisher: EventPublisher,
   ) {}
 
   async execute(command: DepositMoneyCommand): Promise<void> {
     const { accountId, amount, referenceId } = command;
 
-    // Bước A: Lấy toàn bộ lịch sử sự kiện từ Postgres Event Store
+    // Bước A: Lấy toàn bộ lịch sử sự kiện của tài khoản này từ Postgres Event Store
     const eventEntities = await this.eventStoreRepository.getEvents(accountId);
     if (eventEntities.length === 0) {
       throw new NotFoundException(`Không tìm thấy tài khoản tài chính với ID: ${accountId}`);
     }
 
-    // Bước B: Chuyển đổi Entity DB thành các Class Event nguyên bản
+    // Bước B: Trích xuất mảng payload (các Event nguyên bản) từ các Entity DB
     const historicalEvents = eventEntities.map((entity) => entity.payload);
 
-    // Bước C: Khởi tạo Aggregate và nạp lịch sử để "Hồi sinh" (Rehydrate) trạng thái số dư
-    // Senior sử dụng mergeObjectContext của NestJS để Aggregate có thể tự động bắn Event sang RabbitMQ/EventBus sau này
-    const account = this.publisher.mergeObjectContext(new AccountAggregate());
+    // Bước C: Hồi sinh (Rehydrate) Aggregate bằng cách nạp lại lịch sử sự kiện
+    let account = new AccountAggregate();
     account.loadFromHistory(historicalEvents);
 
-    // Lưu lại phiên bản hiện tại trước khi thay đổi (Dùng cho Optimistic Concurrency Control)
+    // Bước D: Bơm context CQRS của NestJS vào thực thể đã hồi sinh
+    account = this.publisher.mergeObjectContext(account);
+
+    // Lấy ra version hiện tại của Event cuối cùng để làm Optimistic Concurrency Control
     const expectedVersion = eventEntities[eventEntities.length - 1].sequenceNumber;
 
-    // Bước D: Gọi Domain Logic để thực hiện nạp tiền (Aggregate tự sinh ra MoneyDepositedEvent bên trong)
+    // Bước E: Gọi Domain Logic nạp tiền (Hàm này tự sinh ra MoneyDepositedEvent bên trong)
     account.deposit(amount, referenceId);
 
-    // Bước E: Lấy các Event mới sinh ra để lưu vật lý xuống Event Store
+    // Bước F: Trích xuất event mới sinh ra để chuẩn bị ghi xuống đĩa
     const uncommittedEvents = account.getUncommittedEvents().map((event) => ({
       type: event.constructor.name,
       payload: event,
     }));
 
+    // Bước G: Lưu event nạp tiền mới vào Postgres Event Store
     await this.eventStoreRepository.saveEvents(accountId, expectedVersion, uncommittedEvents);
 
-    // Bước F: Chính thức phát hành (Publish) Event lên EventBus/RabbitMQ để bên Read Model (MongoDB) cập nhật số dư
+    // Bước H: Bắn event qua RabbitMQ để bên Analytics (MongoDB) cập nhật số dư phẳng
     account.commit();
   }
 }
