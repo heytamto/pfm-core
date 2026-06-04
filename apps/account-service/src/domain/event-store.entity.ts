@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index, UpdateDateColumn } from 'typeorm';
 
 @Entity('event_store')
 @Index(['aggregateId', 'sequenceNumber'], { unique: true })
@@ -26,5 +26,9 @@ export class EventStoreEntity {
   metadata?: any; // Dấu ? vì trường này có thể nullable
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp with time zone' })
-  createdAt!: Date; // Thêm dấu !
+  createdAt!: Date;
+
+  // 🟢 BỔ SUNG NẾU MUỐN TỰ ĐỘNG THEO DÕI NGÀY CẬP NHẬT TRẠNG THÁI EVENT
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp with time zone' })
+  updatedAt!: Date;
 }
